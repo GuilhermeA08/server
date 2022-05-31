@@ -1,20 +1,22 @@
+package app;
+
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.ServerSocket;
+import java.io.PrintStream;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.util.Scanner;
 
 public class Processo implements Runnable {
 
   private Socket socket;
-  private ServerSocket serverSocket;
 
   private boolean conexao = true;
+  private TypeConnection typeConnection;
   private static int cont = 0;
 
   private String log[];
-  private int id;
+  private static int id;
+
+  public void name() {}
 
   public Processo(Socket socket) {
     this.socket = socket;
@@ -22,12 +24,12 @@ public class Processo implements Runnable {
 
   public Processo() {}
 
-  public ServerSocket getServerSocket() {
-    return serverSocket;
+  public TypeConnection getTypeConnection() {
+    return typeConnection;
   }
 
-  public void setServerSocket(ServerSocket serverSocket) {
-    this.serverSocket = serverSocket;
+  public void setTypeConnection(TypeConnection typeConnection) {
+    this.typeConnection = typeConnection;
   }
 
   public Socket getSocket() {
@@ -67,11 +69,64 @@ public class Processo implements Runnable {
   }
 
   public void setId(int id) {
-    this.id = id;
+    Processo.id = id;
   }
+
+  public void menu() {}
 
   @Override
   public void run() {
+    if (this.getTypeConnection() == TypeConnection.LISTEM) {
+      System.out.println("Conexão com o cliente estabelecida:");
+
+      try {
+        Scanner scanner = new Scanner(this.getSocket().getInputStream());
+
+        String mensagemRecebida;
+
+        while (this.isConexao()) {
+          mensagemRecebida = scanner.nextLine();
+
+          if (mensagemRecebida.equalsIgnoreCase("fim")) {
+            this.setConexao(false);
+          } else {
+            System.out.println(mensagemRecebida);
+          }
+        }
+
+        scanner.close();
+        this.getSocket().close();
+      } catch (Exception e) {}
+    } else if (this.getTypeConnection() == TypeConnection.CONNECT) {
+      try {
+        System.out.println("O cliente conectou ao servidor");
+        Scanner scanner = new Scanner(System.in);
+        PrintStream canalDeEnvio = new PrintStream(
+          this.getSocket().getOutputStream()
+        );
+
+        String mensagem;
+
+        while (this.isConexao()) {
+          System.out.println("Digite uma mensagem");
+          mensagem = scanner.nextLine();
+
+          if (mensagem.equalsIgnoreCase("fim")) {
+            this.setConexao(false);
+          } else {
+            System.out.println(mensagem);
+          }
+          canalDeEnvio.println(mensagem);
+        }
+
+        canalDeEnvio.close();
+        scanner.close();
+        socket.close();
+      } catch (Exception e) {
+        //TODO: handle exception
+      }
+    }
+
     System.out.println(
       "Conexão " +
       Processo.cont +
@@ -108,38 +163,4 @@ public class Processo implements Runnable {
   public void enviarMensagem() {}
 
   public void receberMensagem() {}
-
-  public void connect() throws UnknownHostException, IOException {
-    try (Socket socket = new Socket("127.0.0.1", 12345)) {
-      InetAddress inet = socket.getInetAddress();
-
-      System.out.println("HostAddress = " + inet.getHostAddress());
-      System.out.println("HostName = " + inet.getHostName());
-    }
-
-    /*
-     * Cria um novo objeto Cliente com a conexão socket para que seja executado em um novo processo.
-       Permitindo assim a conexão de vário clientes com o servidor.
-       */
-
-    Thread t = new Thread(this);
-    t.start();
-  }
-
-  public void listen() throws IOException {
-    serverSocket = new ServerSocket(12345);
-    while (true) {
-      Socket cliente = serverSocket.accept();
-
-      // Cria uma thread do servidor para tratar a conexão
-      Processo processo = new Processo(cliente);
-
-      Thread t = new Thread(processo);
-      // Inicia a thread para o cliente conectado
-
-      Processo.setCont(Processo.getCont() + 1);
-
-      t.start();
-    }
-  }
 }
