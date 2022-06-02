@@ -11,10 +11,9 @@ public class Processo implements Runnable {
 
   private boolean conexao = true;
   private TypeConnection typeConnection;
-  private static int cont = 0;
+  private static int id = 0;
 
   private String log[];
-  private static int id;
 
   public void name() {}
 
@@ -48,12 +47,12 @@ public class Processo implements Runnable {
     this.conexao = conexao;
   }
 
-  public static int getCont() {
-    return cont;
+  public static int getId() {
+    return id;
   }
 
-  public static void setCont(int cont) {
-    Processo.cont = cont;
+  public static void setId(int id) {
+    Processo.id = id;
   }
 
   public String[] getLog() {
@@ -64,28 +63,25 @@ public class Processo implements Runnable {
     this.log = log;
   }
 
-  public int getId() {
-    return id;
-  }
-
-  public void setId(int id) {
-    Processo.id = id;
-  }
-
   public void menu() {}
 
   @Override
   public void run() {
+    // System.out.println("cheguei no run");
+    // System.out.println("my id" + Processo.getId());
     if (this.getTypeConnection() == TypeConnection.LISTEM) {
       System.out.println("Conexão com o cliente estabelecida:");
 
       try {
         Scanner scanner = new Scanner(this.getSocket().getInputStream());
+        scanner.next();
 
         String mensagemRecebida;
 
         while (this.isConexao()) {
           mensagemRecebida = scanner.nextLine();
+          System.out.println("pegando msg");
+          // Integer.parseInt(mensagemRecebida);
 
           if (mensagemRecebida.equalsIgnoreCase("fim")) {
             this.setConexao(false);
@@ -96,67 +92,41 @@ public class Processo implements Runnable {
 
         scanner.close();
         this.getSocket().close();
-      } catch (Exception e) {}
+      } catch (NumberFormatException | IOException number) {
+        System.out.println(number.getCause());
+        number.printStackTrace();
+      }
     } else if (this.getTypeConnection() == TypeConnection.CONNECT) {
       try {
         System.out.println("O cliente conectou ao servidor");
-        Scanner scanner = new Scanner(System.in);
+
         PrintStream canalDeEnvio = new PrintStream(
           this.getSocket().getOutputStream()
         );
 
         String mensagem;
+        System.out.println("mensagem criada");
 
         while (this.isConexao()) {
           System.out.println("Digite uma mensagem");
-          mensagem = scanner.nextLine();
+          mensagem = ProcessoManager.scanner.nextLine();
+          // System.out.println("mensagem lida");
 
           if (mensagem.equalsIgnoreCase("fim")) {
             this.setConexao(false);
           } else {
             System.out.println(mensagem);
           }
+          System.out.println("\tEnviado");
           canalDeEnvio.println(mensagem);
         }
 
         canalDeEnvio.close();
-        scanner.close();
+        // scanner.close();
         socket.close();
       } catch (Exception e) {
-        //TODO: handle exception
+        e.printStackTrace();
       }
-    }
-
-    System.out.println(
-      "Conexão " +
-      Processo.cont +
-      " com o cliente " +
-      socket.getInetAddress().getHostAddress() +
-      "/" +
-      socket.getInetAddress().getHostName()
-    );
-
-    try {
-      Scanner s = null;
-      s = new Scanner(socket.getInputStream());
-      String mensagemRecebida;
-
-      // Exibe mensagem no console
-      while (conexao) {
-        mensagemRecebida = s.nextLine();
-
-        if (mensagemRecebida.equalsIgnoreCase("fim")) conexao =
-          false; else System.out.println(mensagemRecebida);
-      }
-
-      // Finaliza scanner e socket
-      s.close();
-      System.out.println(
-        "Fim da conexão " + socket.getInetAddress().getHostAddress()
-      );
-      socket.close();
-    } catch (IOException e) {
-      e.getMessage();
     }
   }
 

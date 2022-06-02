@@ -8,10 +8,10 @@ import java.util.Scanner;
 
 public class ProcessoManager {
 
+  static Scanner scanner = new Scanner(System.in);
+
   public static void main(String[] args)
     throws UnknownHostException, IOException {
-    Scanner scanner = new Scanner(System.in);
-
     // String host;
     // int port;
     int opção;
@@ -29,23 +29,31 @@ public class ProcessoManager {
       System.out.println("Processo");
       System.out.println("1- Escutar");
       System.out.println("2- Conectar");
+
       opção = scanner.nextInt();
 
       switch (opção) {
         case 1:
           System.out.println("Porta: ");
           ServerSocket serverSocket = new ServerSocket(scanner.nextInt());
+
+          // scanner.close();
+
           Socket cliente = serverSocket.accept();
           Processo processo = new Processo(cliente);
           processo.setTypeConnection(TypeConnection.LISTEM);
           Thread thread = new Thread(processo);
-          Processo.setCont(Processo.getCont() + 1);
+          Processo.setId(Processo.getId() + 1);
           thread.start();
           serverSocket.close();
           break;
         case 2:
           System.out.println("Host e Porta: ");
           Socket socket = new Socket(scanner.next(), scanner.nextInt());
+
+          // scanner.close();
+          // System.out.println("scanner 1 closed");
+
           Processo processoConnect = new Processo(socket);
           processoConnect.setTypeConnection(TypeConnection.CONNECT);
           Thread thread2 = new Thread(processoConnect);
@@ -55,6 +63,13 @@ public class ProcessoManager {
           break;
       }
     } while (false);
+    // scanner.close();
+  }
+
+  static String lerMensagem() {
+    Scanner scanner = new Scanner(System.in);
+    String mensagem = scanner.nextLine();
     scanner.close();
+    return mensagem;
   }
 }
